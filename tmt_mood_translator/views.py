@@ -1,12 +1,62 @@
+from django.http.response import HttpResponseNotFound
 from django.shortcuts import render
 from .models import Input
-from .dynamodb_migrator import push_data, check_data
+from .dynamodb_migrator import get_all, push_data, check_data
 from googletrans import Translator
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+from django.http import HttpResponse, Http404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
 import json
 
 # Create your views here.
 
+class myAPI(APIView):
+
+    def get(self, *args, **kwargs):
+        data=get_all()
+        return Response(data)
+       
+
+    def post(self):
+        pass
+
+class myAPISingle(APIView):
+    def get(self, *args, **kwargs):
+        text=self.kwargs['input']
+        indicator, data=check_data(text)
+        if indicator == True:
+            return Response(data)
+        else:
+            if len(self.kwargs['input'])<=5:
+                return HttpResponseNotFound('<h1>Input too short</h1>')
+            else:
+                translator = Translator()
+                language=translator.detect(text).lang
+
+                analyzer=SentimentIntensityAnalyzer()
+                translated=""
+                evaluation=""
+
+                if language!='en':
+                    translated = translator.translate(text, dest='en')
+                    evaluation=json.dumps(analyzer.polarity_scores(translated.text))
+                    output={'input': text, 'translation': translated.text, 'positivity': evaluation}
+                    push_data(text, translated.text, evaluation)
+                else:
+                    evaluation=json.dumps(analyzer.polarity_scores(text))
+                    output={'input': text, 'translation': "", 'positivity': evaluation}
+                    push_data(text, "", evaluation)
+                
+                return Response(output)
+
+       
+
+    def post(self):
+        pass
 
 
 def home(request):
@@ -36,37 +86,10 @@ def home(request):
             
         else:
             output={'input': text, 'positivity': data['evaluation'], 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
-        
-        
-
-
-        # indicator, my_dict = 
-        # # check if text is in database
-        # if Input.objects.filter(input=text).exists()==False:
-        #     translator = Translator()
-        #     language=translator.detect(text).lang
-        #     if language!='en':
-        #         translated = translator.translate(text, dest='en')
-        #         #db=Input(input=text, translation=translated.text, positivity=1)
-        #         #db.save()
-        #         #output={'input': text, 'translation': translated.text, 'positivity': '0.5', 'bool': 'True', 'trans':'True'}
-        #     else:
-        #         db=Input(input=text, positivity=1)
-        #         db.save()
-        #         output={'input': text, 'positivity': '0.5', 'bool': 'True', 'trans':'False'}
-
-        #  # if text is already in database
-        # else:
-        #     positivity=Input.objects.filter(input=text).values('positivity')[0]['positivity']
-        #     output={'input': text, 'positivity': positivity, 'bool': 'True'}
          
     else:
         output={'input': 'Add some more text to your post!', 'bool': 'False' }
     
-    
-    # context = {
-    #     'posts': Input.objects.all()
-    # }
     context = {
         'posts': output
     }
