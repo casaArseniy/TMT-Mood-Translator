@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-5wd)udqs149k+ya4l%*y=%9)fse^zxd5&4(7@jz)5f6q!q=$%f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['http://tmt-mood-translator.eba-jxtxfezy.us-west-2.elasticbeanstalk.com', '127.0.0.1']
+ALLOWED_HOSTS = ['tmt-mood-translator.eba-jxtxfezy.us-west-2.elasticbeanstalk.com', '127.0.0.1']
 
 
 # Application definition
