@@ -59,12 +59,24 @@ class myAPISingle(APIView):
         pass
 
 
+def eval_post(neg, neu, pos):
+    
+    if neg>=0.6:
+        return "OFFENSIVE POST, POSTER SHOULD BE WARNED!"
+    
+    elif neg>=0.3 and (neu<0.4 or pos<0.4):
+        return "RISKY POST, NEED MODERATOR FOR JUDGEMENT."
+    
+    else:
+        return "NORMAL POST, NO NEED FOR MODERATION."
+    
+
 def home(request):
 
     if request.method == 'POST' and len(request.POST['comment'])>5:
         text=request.POST['comment']
 
-        indicator, data = check_data(text)
+        indicator, data = check_data(text) #check if text is in database
 
         if indicator == False:
             translator = Translator()
@@ -77,15 +89,35 @@ def home(request):
             if language!='en':
                 translated = translator.translate(text, dest='en')
                 evaluation=json.dumps(analyzer.polarity_scores(translated.text))
-                output={'input': text, 'translation': translated.text, 'positivity': evaluation, 'bool': 'True', 'trans':'True'}
+                ################################################################
+                eval=json.loads(evaluation)
+                neg=float(eval['neg'])
+                neu=float(eval['neu'])
+                pos=float(eval['pos'])
+                #output={'input': text, 'translation': translated.text, 'positivity': evaluation, 'bool': 'True', 'trans':'True'}
+                output={'input': text, 'translation': translated.text, 'eval': eval_post(neg, neu, pos), 'neg':int(neg*100), 'neu':int(neu*100), 'pos':int(pos*100), 'bool': 'True', 'trans':'True'}
                 push_data(text, translated.text, evaluation)
             else:
                 evaluation=json.dumps(analyzer.polarity_scores(text))
-                output={'input': text, 'positivity': evaluation, 'bool': 'True', 'trans':'False'}
+                eval=json.loads(evaluation)
+                neg=float(eval['neg'])
+                neu=float(eval['neu'])
+                pos=float(eval['pos'])
+                #output={'input': text, 'positivity': evaluation, 'bool': 'True', 'trans':'False'}
+                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':int(neg*100), 'neu':int(neu*100), 'pos':int(pos*100), 'bool': 'True', 'trans':'False'}
                 push_data(text, "", evaluation)
             
         else:
-            output={'input': text, 'positivity': data['evaluation'], 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
+            eval=json.loads(data['evaluation'])
+            neg=float(eval['neg'])
+            neu=float(eval['neu'])
+            pos=float(eval['pos'])
+
+            if data['translation'] == "":
+                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':int(neg*100), 'neu':int(neu*100), 'pos':int(pos*100), 'translation': data['translation'], 'bool': 'True', 'trans':'False'}
+            #output={'input': text, 'positivity': data['evaluation'], 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
+            else:
+                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':int(neg*100), 'neu':int(neu*100), 'pos':int(pos*100), 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
          
     else:
         output={'input': 'Add some more text to your post!', 'bool': 'False' }

@@ -15,7 +15,7 @@
             <h1 class="text-dark">TMT Home</h1>
         </div>
         <div class="mt-4 col-md-12">
-        <h3 class="text-dark">Input you text and get a numerical emotional translation!</h3>
+        <h3 class="text-dark">Input text and get an AI moderator judgement!</h3>
         </div>
         <div class="w-50 p-3" style="background-color: #eee;">
             <form method="post">
@@ -39,16 +39,50 @@
                 {% if posts.trans == 'True' %}
                     <p class="text-dark">Client input: {{posts.input}}</p>
                     <p class="text-dark">English translation: {{posts.translation}}</p>
-                    <p class="text-dark">Evaluation: {{posts.positivity}}</p>
+                    <p class="text-dark">Evaluation: {{posts.eval}}</p>
                 {% else %}
-                <p class="text-dark">Client input:{{posts.input}}</p>
-                <p class="text-dark">Evaluation: {{posts.positivity}}</p>
+                    <p class="text-dark">Client input: {{posts.input}}</p>
+                    <p class="text-dark">Evaluation: {{posts.eval}}</p>
                 {% endif %}
             {% else %}
             <p class="text-dark">{{posts.input}}</p>
             {% endif %}
         </div>
-    </dvv>
+    </div>
+
+    {% if posts.bool == 'True' %}
+
+    {% widthratio posts.neg 100 100 as Neg %}
+    {% widthratio posts.pos 100 100 as Pos %}
+    {% widthratio posts.neu 100 100 as Neu %}
+     
+    <dvv class="row justify-content-center align-items-center">
+        <div class="mt-4 col-md-12" style=margin-left:50%>
+            <div class="progress" style=width:900px>
+                <div class="progress-bar bg-success" role="progressbar" aria-valuenow="40"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ Pos }}%"> 
+                {{posts.pos}}% Positive sentiment
+                </div>
+              </div>
+                <br>
+              <div class="progress" style=width:900px>
+                <div class="progress-bar bg-info" role="progressbar" aria-valuenow="50"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ Neu }}%">
+                {{posts.neu}}% Neutral Sentiment
+                </div>
+              </div>
+              <br>
+              <div class="progress" style=width:900px>
+                <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="70"
+                aria-valuemin="0" aria-valuemax="100" style="width:{{ Neg }}%">
+                {{posts.neg}}% Negative Sentiment
+                </div>
+              </div>
+        </div>
+    </div>
+
+    {% endif %}
+
 </div>
 
 
