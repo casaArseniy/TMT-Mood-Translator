@@ -6,8 +6,8 @@ import boto3
 
 def get_all():
     session = boto3.Session(
-    aws_access_key_id='AKIA5M7CQUGVVIJIJWVF',
-    aws_secret_access_key='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',
+    aws_access_key_id='##########################',
+    aws_secret_access_key='######################',
     region_name='ca-central-1'
     )
 
