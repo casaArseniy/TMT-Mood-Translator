@@ -9,6 +9,17 @@
     <title>TMT</title>
 </head>
 <body>
+
+    {% if messages %}
+        <ul class="messages">
+    {% for message in messages %}
+        <li  {% if message.tags %} class=" {{ message.tags }} " {% endif %}> {{ message }} </li>
+    {% endfor %}
+        </ul>
+    {% endif %}
+
+
+
     <div class=text-center>
     <dvv class="row justify-content-center align-items-center">
         <div class="mt-4 col-md-12">
@@ -17,25 +28,28 @@
         <div class="mt-4 col-md-12">
         <h3 class="text-dark">Input text and get an AI moderator judgement!</h3>
         </div>
+
+        {% if posts.bool == 'False' %}  <!--Show up when there is no inputted translation or translation is too small-->
         <div class="w-50 p-3" style="background-color: #eee;">
             <form method="post">
-            {% csrf_token %}
+                {% csrf_token %}
                 <div class="form-group">
-                    
                     <textarea class="form-control" rows="5" name="comment" id="comment"></textarea>
                 </div>
                 <br>
                 <input type="submit" value="Submit">
             </form>
         </div>
+        {% endif %}
 
         <br>
         <br>
         <div class="mt-4 col-md-12">
             <h3 class="text-dark">Translation</h3>
         </div>
+        {% if posts.bool == 'True' %}
+            <!--Add go back button and satisfaction button-->
         <div class="w-50 p-3" style="background-color: #eee;">
-            {% if posts.bool == 'True' %}
                 {% if posts.trans == 'True' %}
                     <p class="text-dark">Client input: {{posts.input}}</p>
                     <p class="text-dark">English translation: {{posts.translation}}</p>

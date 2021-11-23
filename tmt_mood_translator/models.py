@@ -5,3 +5,13 @@ class Input(models.Model):
     translation=models.CharField(max_length=1000, blank=True)
     positivity=models.CharField(max_length=500)
 
+class Satisfaction(models.Model):
+    satisfied=models.BooleanField()
+
+class User_Evaluation(models.Model):
+    angry=models.BooleanField()
+    sad=models.BooleanField()
+    joy=models.BooleanField()
+    fear=models.BooleanField()
+    disgust=models.BooleanField()
+
