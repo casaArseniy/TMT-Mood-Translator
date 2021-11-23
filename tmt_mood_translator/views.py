@@ -135,7 +135,11 @@ def home(request):
         #new_request = HttpRequest()
         #new_request.method = 'GET' 
         #url = reverse(evaluation_view, kwargs={'output': output})
-        return HttpResponseRedirect('evaluation/%s' % json.dumps(output))
+
+        my_string=json.dumps(output)
+        my_string=my_string.replace('?', '12question_mark21')
+
+        return HttpResponseRedirect('evaluation/%s' % my_string)
 
 
     else:
@@ -149,6 +153,10 @@ def home(request):
 
 def evaluation_view(request, output):
 
+    print(output)
+    output=output.replace('12question_mark21', '?')
+    print(output)
+
     form_gallery=satisfied_form()
 
     if request.method == "POST":
@@ -160,11 +168,8 @@ def evaluation_view(request, output):
             if answer==True:
                 return HttpResponseRedirect('/')
             else:
+                output=output.replace('?','12question_mark21')
                 return HttpResponseRedirect('/feedback/%s' % output)
-    
-    
-
-
 
     context = {
             'posts': json.loads(output),
@@ -176,6 +181,8 @@ def evaluation_view(request, output):
 
 def feedback(request, output):
     form_gallery=user_evaluation_form()
+
+    output=output.replace('12question_mark21', '?')
 
     if request.method == "POST":
         form_gallery = user_evaluation_form(request.POST, request.FILES)
