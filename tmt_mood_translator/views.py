@@ -1,83 +1,146 @@
-from django.forms.widgets import NumberInput
-from django.http import response
+from pickle import NONE
 from django.http.response import HttpResponseNotFound
 from django.shortcuts import render
-from .models import Input
 from .dynamodb_migrator import get_all, push_data, check_data, push_feedback
 from googletrans import Translator
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from django.shortcuts import redirect
-
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpRequest
-from django.template import RequestContext
+from django.http import HttpResponseRedirect
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.urls import reverse
+from rest_framework import status
 from django.contrib import messages
-
-
-
+import ktrain
 from . forms import *
-
 import json
+from rest_framework import serializers
+from .models import Input
 
-# Create your views here.
+
+predictor=ktrain.load_predictor('bert_model/models/bert_model')
+
+
+class InitialInputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Input
+        fields=('input', )
+
+def create_evaluation(text):
+    output=''
+    if len(text)<=5:
+        return output
+    else:
+        translator = Translator()
+        language=translator.detect(text).lang
+        translated=""
+        evaluation=""
+
+        if language!='en':
+            translated = translator.translate(text, dest='en').text
+            score=predictor.predict_proba(translated)
+            joy=float(score[0])
+            sadness=float(score[1])
+            fear=float(score[2])
+            anger=float(score[3])
+            neutral=float(score[4])
+            score_evaluation = {'joy': joy, 'sadness': sadness, 'fear': fear, 'anger': anger, 'neutral': neutral}
+            evaluation=json.dumps(score_evaluation)
+            output={
+                'input': text, 
+                'translation': translated, 
+                'joy': joy, 
+                'sadness': sadness, 
+                'fear': fear, 
+                'anger': anger, 
+                'neutral': neutral,
+                }
+            push_data(text, translated.text, evaluation)
+        else:
+            score=predictor.predict_proba(text)
+            joy=float(score[0])
+            sadness=float(score[1])
+            fear=float(score[2])
+            anger=float(score[3])
+            neutral=float(score[4])
+            score_evaluation = {'joy': joy, 'sadness': sadness, 'fear': fear, 'anger': anger, 'neutral': neutral}
+            evaluation=json.dumps(score_evaluation)
+            output={
+                'input': text, 
+                'translation': "",
+                'joy': joy, 
+                'sadness': sadness, 
+                'fear': fear, 
+                'anger': anger, 
+                'neutral': neutral,
+                }
+            push_data(text, "", evaluation)
+    return output
+        
+
 
 class myAPI(APIView):
+
+    serializer_class = InitialInputSerializer
 
     def get(self, *args, **kwargs):
         data=get_all()
         return Response(data)
        
 
-    def post(self):
-        pass
+    def post(self, request, format=NONE):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            text=serializer.data.get('input')
+            indicator, data=check_data(text) 
+            if indicator == True:
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                output=create_evaluation(text)
+                if output=='':
+                    return Response({'Bad Request': 'Too short...'}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response(output)
+        else:
+            return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
 
 class myAPISingle(APIView):
+    serializer_class = InitialInputSerializer
+
     def get(self, *args, **kwargs):
-        text=self.kwargs['input']
+        text=self.kwargs['my_input']
         indicator, data=check_data(text)
         if indicator == True:
             return Response(data)
         else:
-            if len(self.kwargs['input'])<=5:
-                return HttpResponseNotFound('<h1>Input too short</h1>')
+            return Response({"ERROR": "No such input exists! Use POST to create one."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request, format=NONE, *args, **kwargs,):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            text=serializer.data.get('input')
+            indicator, data=check_data(text) 
+            if indicator == True:
+                return Response(data, status=status.HTTP_200_OK)
             else:
-                translator = Translator()
-                language=translator.detect(text).lang
-
-                analyzer=SentimentIntensityAnalyzer()
-                translated=""
-                evaluation=""
-
-                if language!='en':
-                    translated = translator.translate(text, dest='en')
-                    evaluation=json.dumps(analyzer.polarity_scores(translated.text))
-                    output={'input': text, 'translation': translated.text, 'positivity': evaluation}
-                    push_data(text, translated.text, evaluation)
+                output=create_evaluation(text)
+                if output=='':
+                    return Response({'Bad Request': 'Too short...'}, status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    evaluation=json.dumps(analyzer.polarity_scores(text))
-                    output={'input': text, 'translation': "", 'positivity': evaluation}
-                    push_data(text, "", evaluation)
-                
-                return Response(output)
-
-       
-
-    def post(self):
-        pass
+                    return Response(output)
+        else:
+            return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
-def eval_post(neg, neu, pos):
-    
-    if neg>=0.6:
+def eval_post(joy, sadness, fear, anger, neutral):
+
+    if anger>=0.5:
         return "OFFENSIVE POST, POSTER SHOULD BE WARNED!"
-    
-    elif neg>=0.3 and (neu<0.4 or pos<0.4):
+    elif anger>0.2 and (sadness>0.2 or fear>0.2):
         return "RISKY POST, NEED MODERATOR FOR JUDGEMENT."
-    
+    elif fear>0.5:
+        return "RISKY POST, NEED MODERATOR FOR JUDGEMENT."
     else:
         return "NORMAL POST, NO NEED FOR MODERATION."
+
     
 
 def home(request):
@@ -91,50 +154,91 @@ def home(request):
             translator = Translator()
             language=translator.detect(text).lang
 
-            analyzer=SentimentIntensityAnalyzer()
             translated=""
             evaluation=""
 
             if language!='en':
-                translated = translator.translate(text, dest='en')
-                evaluation=json.dumps(analyzer.polarity_scores(translated.text))
-                ################################################################
-                eval=json.loads(evaluation)
-                neg=float(eval['neg'])
-                neu=float(eval['neu'])
-                pos=float(eval['pos'])
-                #output={'input': text, 'translation': translated.text, 'positivity': evaluation, 'bool': 'True', 'trans':'True'}
-                output={'input': text, 'translation': translated.text, 'eval': eval_post(neg, neu, pos), 'neg':int(neg*100), 'neu':int(neu*100), 'pos':int(pos*100), 'bool': 'True', 'trans':'True'}
-                push_data(text, translated.text, evaluation)
+                translated = translator.translate(text, dest='en').text
+                score=predictor.predict_proba(translated)
+                joy=float(score[0])
+                sadness=float(score[1])
+                fear=float(score[2])
+                anger=float(score[3])
+                neutral=float(score[4])
+                score_evaluation = {'joy': joy, 'sadness': sadness, 'fear': fear, 'anger': anger, 'neutral': neutral}
+                evaluation=json.dumps(score_evaluation)
+                output={
+                    'input': text, 
+                    'translation': translated, 
+                    'eval': eval_post(joy, sadness, fear, anger, neutral),
+                    'joy': int(joy*100), 
+                    'sadness': int(sadness*100), 
+                    'fear': int(fear*100), 
+                    'anger': int(anger*100), 
+                    'neutral': int(neutral*100),
+                    'bool': 'True', 
+                    'trans':'True'
+                    }
+                push_data(text, translated, evaluation)
             else:
-                evaluation=json.dumps(analyzer.polarity_scores(text))
-                eval=json.loads(evaluation)
-                neg=float(eval['neg'])
-                neu=float(eval['neu'])
-                pos=float(eval['pos'])
-                #output={'input': text, 'positivity': evaluation, 'bool': 'True', 'trans':'False'}
-                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':str(int(neg*100)), 'neu':str(int(neu*100)), 'pos':str(int(pos*100)), 'bool': 'True', 'trans':'False'}
+                score=predictor.predict_proba(text)
+                joy=float(score[0])
+                sadness=float(score[1])
+                fear=float(score[2])
+                anger=float(score[3])
+                neutral=float(score[4])
+                score_evaluation = {'joy': joy, 'sadness': sadness, 'fear': fear, 'anger': anger, 'neutral': neutral}
+                evaluation=json.dumps(score_evaluation)
+                output={
+                    'input': text,
+                    'eval': eval_post(joy, sadness, fear, anger, neutral),
+                    'joy': int(joy*100), 
+                    'sadness': int(sadness*100), 
+                    'fear': int(fear*100), 
+                    'anger': int(anger*100), 
+                    'neutral': int(neutral*100),
+                    'bool': 'True', 
+                    'trans':'False'
+                    }
                 push_data(text, "", evaluation)
             
         else:
             eval=json.loads(data['evaluation'])
-            neg=float(eval['neg'])
-            neu=float(eval['neu'])
-            pos=float(eval['pos'])
+            joy=eval['joy']
+            sadness=eval['sadness']
+            fear=eval['fear']
+            anger=eval['anger']
+            neutral=eval['neutral']
 
             if data['translation'] == "":
-                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':str(int(neg*100)), 'neu':str(int(neu*100)), 'pos':str(int(pos*100)), 'translation': data['translation'], 'bool': 'True', 'trans':'False'}
-            #output={'input': text, 'positivity': data['evaluation'], 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
+                output={
+                    'input': text, 
+                    'eval': eval_post(joy, sadness, fear, anger, neutral),
+                    'joy': int(joy*100), 
+                    'sadness': int(sadness*100), 
+                    'fear': int(fear*100), 
+                    'anger': int(anger*100), 
+                    'neutral': int(neutral*100),
+                    'bool': 'True', 
+                    'trans':'False'
+                    }
             else:
-                output={'input': text, 'eval': eval_post(neg, neu, pos), 'neg':str(int(neg*100)), 'neu':str(int(neu*100)), 'pos':str(int(pos*100)), 'translation': data['translation'], 'bool': 'True', 'trans':'True'}
+                output={
+                    'input': text,
+                    'translation': data['translation'], 
+                    'eval': eval_post(joy, sadness, fear, anger, neutral),
+                    'joy': int(joy*100), 
+                    'sadness': int(sadness*100), 
+                    'fear': int(fear*100), 
+                    'anger': int(anger*100), 
+                    'neutral': int(neutral*100),
+                    'bool': 'True', 
+                    'trans':'False'
+                    }
 
         context = {
         'posts': output
         } 
-        
-        #new_request = HttpRequest()
-        #new_request.method = 'GET' 
-        #url = reverse(evaluation_view, kwargs={'output': output})
 
         my_string=json.dumps(output)
         my_string=my_string.replace('?', '12question_mark21')
@@ -153,23 +257,15 @@ def home(request):
 
 def evaluation_view(request, output):
 
-    print(output)
     output=output.replace('12question_mark21', '?')
-    print(output)
 
     form_gallery=satisfied_form()
 
-    if request.method == "POST":
-        form_gallery = satisfied_form(request.POST, request.FILES)
-
-        if form_gallery.is_valid():
-            answer=form_gallery.cleaned_data["satisfied"]
-            print(answer)
-            if answer==True:
-                return HttpResponseRedirect('/')
-            else:
-                output=output.replace('?','12question_mark21')
-                return HttpResponseRedirect('/feedback/%s' % output)
+    if 'yes' in request.POST:
+        return HttpResponseRedirect('/')
+    elif 'no' in request.POST:
+        output=output.replace('?','12question_mark21')
+        return HttpResponseRedirect('/feedback/%s' % output)
 
     context = {
             'posts': json.loads(output),
@@ -188,21 +284,15 @@ def feedback(request, output):
         form_gallery = user_evaluation_form(request.POST, request.FILES)
 
         if form_gallery.is_valid():
-            angry=form_gallery.cleaned_data["angry"]
-            sad=form_gallery.cleaned_data["sad"]
             joy=form_gallery.cleaned_data["joy"]
+            sadness=form_gallery.cleaned_data["sadness"]
             fear=form_gallery.cleaned_data["fear"]
-            disgust=form_gallery.cleaned_data["disgust"]
-
-            print(angry)
-            print(sad)
-            print(joy)
-            print(fear)
-            print(disgust)
+            anger=form_gallery.cleaned_data["anger"]
+            neutral=form_gallery.cleaned_data["neutral"]
 
             input=json.loads(output)['input']
 
-            push_feedback(input, angry, sad, joy, fear, disgust)
+            push_feedback(input, joy, sadness, fear, anger,  neutral)
 
             messages.success(request, 'Thank you for your feedback.')
             
