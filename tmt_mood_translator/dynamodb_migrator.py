@@ -88,12 +88,10 @@ def push_feedback(input, angry, sad, joy, fear, disgust):
         Item={
             'input': input,
             'id': id,
-            'angry': angry,
-            'sad' : sad,
-            'joy': joy,
-            'fear': fear,
-            'disgust': disgust,
+            'joy': joy, 
+            'sadness': sadness, 
+            'fear': fear, 
+            'anger': anger, 
+            'neutral': neutral,
                 }
             )
-
-    pass
