@@ -23,9 +23,10 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="form-group">
-                        {{ form.as_p }}
+                        <!--{{ form.as_p }}-->
                         <div class="input-group-prepend">
-                            <button type="submit", name="Submit", value="Submit", class="btn btn-success">Submit</button>
+                            <button type="submit", name="yes", value="yes", class="btn btn-success">Yes</button>
+                            <button type="submit", name="no", value="no", class="btn btn-success">No</button>
                         </div>
                     </div>
                     <br>
@@ -53,30 +54,46 @@
     
         {% if posts.bool == 'True' %}
     
-        {% widthratio posts.neg 100 100 as Neg %}
-        {% widthratio posts.pos 100 100 as Pos %}
-        {% widthratio posts.neu 100 100 as Neu %}
+        {% widthratio posts.joy 100 100 as Joy %}
+        {% widthratio posts.sadness 100 100 as Sadness %}
+        {% widthratio posts.fear 100 100 as Fear %}
+        {% widthratio posts.anger 100 100 as Anger %}
+        {% widthratio posts.neutral 100 100 as Neutral %}
          
         <dvv class="row justify-content-center align-items-center">
             <div class="mt-4 col-md-12" style=margin-left:50%>
                 <div class="progress" style=width:900px>
                     <div class="progress-bar bg-success" role="progressbar" aria-valuenow="40"
-                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Pos }}%"> 
-                    {{posts.pos}}% Positive sentiment
+                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Joy }}%"> 
+                    {{posts.joy}}% Joy
                     </div>
                   </div>
                     <br>
                   <div class="progress" style=width:900px>
                     <div class="progress-bar bg-info" role="progressbar" aria-valuenow="50"
-                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Neu }}%">
-                    {{posts.neu}}% Neutral Sentiment
+                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Sadness }}%">
+                    {{posts.sadness}}% Sadness
+                    </div>
+                  </div>
+                  <br>
+                  <div class="progress" style=width:900px>
+                    <div class="progress-bar bg-warning" role="progressbar" aria-valuenow="50"
+                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Fear }}%">
+                    {{posts.fear}}% Fear
                     </div>
                   </div>
                   <br>
                   <div class="progress" style=width:900px>
                     <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="70"
-                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Neg }}%">
-                    {{posts.neg}}% Negative Sentiment
+                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Anger }}%">
+                    {{posts.anger}}% Anger
+                    </div>
+                  </div>
+                  <br>
+                  <div class="progress" style=width:900px>
+                    <div class="progress-bar" role="progressbar" aria-valuenow="70"
+                    aria-valuemin="0" aria-valuemax="100" style="width:{{ Neutral }}%">
+                    {{posts.neutral}}% Neutral
                     </div>
                   </div>
             </div>
