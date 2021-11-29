@@ -12,5 +12,5 @@ class satisfied_form(forms.ModelForm):
 class user_evaluation_form(forms.ModelForm):
     class Meta:
         model = User_Evaluation
-        fields = ['angry', 'sad', 'joy', 'fear', 'disgust']
-        labels = {'angry': 'Angry', 'sad': 'Sad', 'joy': 'Joy', 'fear': 'Fear', 'disgust':'Disgust'}
+        fields = ['joy', 'sadness', 'fear', 'anger', 'neutral']
+        labels = {'joy': 'Joy', 'sadness': 'Sadness', 'fear': 'Fear', 'anger': 'Anger', 'neutral':'Neutral'}
