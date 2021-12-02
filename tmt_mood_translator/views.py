@@ -1,7 +1,7 @@
 from pickle import NONE
 from django.http.response import HttpResponseNotFound
 from django.shortcuts import render
-from .dynamodb_migrator import get_all, push_data, check_data, push_feedback
+from .dynamodb_migrator import get_all, get_all_feedback, push_data, check_data, push_feedback, get_all_feedback, get_this_feedback
 from googletrans import Translator
 from django.http import HttpResponseRedirect
 from rest_framework.views import APIView
@@ -12,7 +12,7 @@ import ktrain
 from . forms import *
 import json
 from rest_framework import serializers
-from .models import Input
+from .models import Input, User_Evaluation
 
 
 predictor=ktrain.load_predictor('bert_model/models/bert_model')
@@ -22,6 +22,11 @@ class InitialInputSerializer(serializers.ModelSerializer):
     class Meta:
         model=Input
         fields=('input', )
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User_Evaluation
+        fields=('input', 'joy', 'sadness', 'fear', 'anger', 'neutral')
 
 def create_evaluation(text):
     output=''
@@ -73,10 +78,8 @@ def create_evaluation(text):
                 }
             push_data(text, "", evaluation)
     return output
-        
 
-
-class myAPI(APIView):
+class all_API_analysis(APIView):
 
     serializer_class = InitialInputSerializer
 
@@ -101,18 +104,50 @@ class myAPI(APIView):
         else:
             return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
 
-class myAPISingle(APIView):
+class all_API_feedback(APIView):
+
+    serializer_class = FeedbackSerializer
+
+    def get(self, *args, **kwargs):
+        data=get_all_feedback()
+        return Response(data)
+       
+
+    def post(self, request, format=NONE):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            text=serializer.data.get('input')
+            indicator, data=check_data(text) 
+            if indicator == True:
+                push_feedback(text, serializer.data.get('joy'), serializer.data.get('sadness'),
+                                serializer.data.get('fear'), serializer.data.get('anger'), serializer.data.get('neutral'))
+                data={'input': text,
+                    'joy':serializer.data.get('joy'),
+                    'sadness':serializer.data.get('sadness'),
+                    'fear':serializer.data.get('fear'),
+                    'anger': serializer.data.get('anger'),
+                    'neutral': serializer.data.get('neutral')}
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return Response({'Bad Request': 'No such input was entered'}, status=status.HTTP_400_BAD_REQUEST)
+                
+        else:
+            return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
+class myAPI_analysis(APIView):
+
     serializer_class = InitialInputSerializer
 
     def get(self, *args, **kwargs):
         text=self.kwargs['my_input']
-        indicator, data=check_data(text)
-        if indicator == True:
+        check, data = check_data(text)
+        if check == True:
             return Response(data)
         else:
-            return Response({"ERROR": "No such input exists! Use POST to create one."}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def post(self, request, format=NONE, *args, **kwargs,):
+            return Response({'Bad Request': 'No such input was entered'}, status=status.HTTP_400_BAD_REQUEST)
+       
+
+    def post(self, request, format=NONE,  *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             text=serializer.data.get('input')
@@ -127,6 +162,39 @@ class myAPISingle(APIView):
                     return Response(output)
         else:
             return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
+class myAPIS_feedback(APIView):
+    serializer_class = FeedbackSerializer
+
+    def get(self, *args, **kwargs):
+        text=self.kwargs['my_input']
+        indicator, data=get_this_feedback(text)
+        if indicator == True:
+            return Response(data)
+        else:
+            return Response({"ERROR": "Feedbacks to this text do not exist."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request, format=NONE, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            text=serializer.data.get('input')
+            indicator, data=check_data(text) 
+            if indicator == True:
+                push_feedback(text, serializer.data.get('joy'), serializer.data.get('sadness'),
+                                serializer.data.get('fear'), serializer.data.get('anger'), serializer.data.get('neutral'))
+                data={'input': text,
+                    'joy':serializer.data.get('joy'),
+                    'sadness':serializer.data.get('sadness'),
+                    'fear':serializer.data.get('fear'),
+                    'anger': serializer.data.get('anger'),
+                    'neutral': serializer.data.get('neutral')}
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                return Response({'Bad Request': 'No such input was entered'}, status=status.HTTP_400_BAD_REQUEST)
+                
+        else:
+            return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
+
         
 
 
@@ -233,7 +301,7 @@ def home(request):
                     'anger': int(anger*100), 
                     'neutral': int(neutral*100),
                     'bool': 'True', 
-                    'trans':'False'
+                    'trans':'True'
                     }
 
         context = {
