@@ -9,6 +9,7 @@ class Satisfaction(models.Model):
     satisfied=models.BooleanField()
 
 class User_Evaluation(models.Model):
+    input=models.CharField(max_length=500)
     joy=models.BooleanField()
     sadness=models.BooleanField()
     fear=models.BooleanField()
