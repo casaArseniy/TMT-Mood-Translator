@@ -1,6 +1,7 @@
 import boto3
 import random
 import string
+from boto3.dynamodb.conditions import Attr
 # from boto3.session import Session
 # from botocore.client import Config
 # from botocore.handlers import set_list_objects_encoding_type_url
@@ -8,8 +9,8 @@ import string
 
 def get_all():
     session = boto3.Session(
-    aws_access_key_id='#',
-    aws_secret_access_key='/',
+    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+    aws_secret_access_key='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',
     region_name='ca-central-1'
     )
 
@@ -27,8 +28,8 @@ def get_all():
 
 def get_all_feedback():
     session = boto3.Session(
-        aws_access_key_id='#',
-        aws_secret_access_key='/',
+        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+        aws_secret_access_key='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',
         region_name='ca-central-1'
     )
 
@@ -46,44 +47,40 @@ def get_all_feedback():
 
 def get_this_feedback(input):
     session = boto3.Session(
-        aws_access_key_id='#',
-        aws_secret_access_key='#',
+        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+        aws_secret_access_key='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',
         region_name='ca-central-1'
     )
 
     DB=session.resource('dynamodb')
     table=DB.Table("My_FeedBack_Table")
-    
-    response = table.get_item(
-            Key={
-                'input': input
-            }
-        )
 
-    if 'Item' in response:
-        return True, response["Item"]
+    response = table.scan(
+        FilterExpression=Attr("input").eq(input)
+    )
+
+    if 'Items' in response:
+        return True, response["Items"]
     
     return False, "NULL"
 
 
 def check_data(input):
     session = boto3.Session(
-    aws_access_key_id='#',
-    aws_secret_access_key='/',
+    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+    aws_secret_access_key='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',
     region_name='ca-central-1'
     )
 
     DB=session.resource('dynamodb')
     table=DB.Table("My_TMT_Table")
 
-    response = table.get_item(
-            Key={
-                'input': input
-            }
-        )
+    response = table.scan(
+        FilterExpression=Attr("input").eq(input)
+    )
     
-    if 'Item' in response:
-        return True, response["Item"]
+    if 'Items' in response:
+        return True, response["Items"]
     
     return False, "NULL"
 
@@ -91,8 +88,8 @@ def check_data(input):
 def push_data(input, translation, evaluation):
 
     session = boto3.Session(
-    aws_access_key_id='#',
-    aws_secret_access_key='#',
+    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+    aws_secret_access_key='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',
     region_name='ca-central-1'
     )
 
@@ -114,8 +111,8 @@ def randStr(chars=string.ascii_uppercase + string.digits, N=10):
 def push_feedback(input, joy, sadness, fear, anger,  neutral):
 
     session = boto3.Session(
-        aws_access_key_id='#',
-        aws_secret_access_key='#',
+        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
+        aws_secret_access_key='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',
         region_name='ca-central-1'
     )
 
