@@ -9,8 +9,8 @@ from boto3.dynamodb.conditions import Attr
 
 def get_all():
     session = boto3.Session(
-    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-    aws_secret_access_key='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',
+    aws_access_key_id='',
+    aws_secret_access_key='/',
     region_name='ca-central-1'
     )
 
@@ -28,8 +28,8 @@ def get_all():
 
 def get_all_feedback():
     session = boto3.Session(
-        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-        aws_secret_access_key='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',
+        aws_access_key_id='',
+        aws_secret_access_key='/',
         region_name='ca-central-1'
     )
 
@@ -47,8 +47,8 @@ def get_all_feedback():
 
 def get_this_feedback(input):
     session = boto3.Session(
-        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-        aws_secret_access_key='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',
+        aws_access_key_id='',
+        aws_secret_access_key='/',
         region_name='ca-central-1'
     )
 
@@ -67,8 +67,8 @@ def get_this_feedback(input):
 
 def check_data(input):
     session = boto3.Session(
-    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-    aws_secret_access_key='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',
+    aws_access_key_id='',
+    aws_secret_access_key='/',
     region_name='ca-central-1'
     )
 
@@ -88,8 +88,8 @@ def check_data(input):
 def push_data(input, translation, evaluation):
 
     session = boto3.Session(
-    aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-    aws_secret_access_key='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',
+    aws_access_key_id='',
+    aws_secret_access_key='/',
     region_name='ca-central-1'
     )
 
@@ -111,8 +111,8 @@ def randStr(chars=string.ascii_uppercase + string.digits, N=10):
 def push_feedback(input, joy, sadness, fear, anger,  neutral):
 
     session = boto3.Session(
-        aws_access_key_id='AKIA5M7CQUGVTGXK3FEA',
-        aws_secret_access_key='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',
+        aws_access_key_id='',
+        aws_secret_access_key='/',
         region_name='ca-central-1'
     )
 
